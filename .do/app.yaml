@@ -34,7 +34,7 @@ services:
         value: ${web.PUBLIC_URL}
       - key: NEXT_PUBLIC_APP_BASE_HOST
         scope: RUN_AND_BUILD_TIME
-        value: placeholder.ondigitalocean.app
+        value: papermark-cf4uv.ondigitalocean.app
 
       # ── Database (auto-bound from dev DB) ─────────────────
       - key: POSTGRES_PRISMA_URL
