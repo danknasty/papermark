@@ -1,0 +1,186 @@
+name: papermark
+region: nyc
+
+services:
+  - name: web
+    github:
+      repo: danknasty/papermark
+      branch: main
+      deploy_on_push: true
+    dockerfile_path: Dockerfile
+    http_port: 3000
+    instance_size_slug: apps-d-1vcpu-2gb
+    instance_count: 1
+    health_check:
+      http_path: /
+      initial_delay_seconds: 30
+      period_seconds: 15
+      timeout_seconds: 5
+      failure_threshold: 5
+    envs:
+      # ── Auth ──────────────────────────────────────────────
+      - key: NEXTAUTH_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: yXwkxLFFU7azLvaO1QnqAGvqu2fAiFgDLqtlsWVBkuk=
+      - key: NEXTAUTH_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${web.PUBLIC_URL}
+      - key: NEXT_PUBLIC_BASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${web.PUBLIC_URL}
+      - key: NEXT_PUBLIC_MARKETING_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${web.PUBLIC_URL}
+      - key: NEXT_PUBLIC_APP_BASE_HOST
+        scope: RUN_AND_BUILD_TIME
+        value: placeholder.ondigitalocean.app
+
+      # ── Database (auto-bound from dev DB) ─────────────────
+      - key: POSTGRES_PRISMA_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: POSTGRES_PRISMA_URL_NON_POOLING
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+
+      # ── Document encryption ───────────────────────────────
+      - key: NEXT_PRIVATE_DOCUMENT_PASSWORD_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: sikxrZxMYK4oeOF7RWgbcHZzb9UeCaGpubLRLchPwZI=
+
+      # ── Verification ──────────────────────────────────────
+      - key: NEXT_PRIVATE_VERIFICATION_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: JcNMMo0GGAeAO6bX4OrFscqPTm5Vn8VqLF9iFbYvAP4=
+
+      # ── Storage (DO Spaces — S3-compatible) ───────────────
+      - key: NEXT_PUBLIC_UPLOAD_TRANSPORT
+        scope: RUN_AND_BUILD_TIME
+        value: s3
+      - key: NEXT_PRIVATE_UPLOAD_BUCKET
+        scope: RUN_TIME
+        value: papermark-uploads
+      - key: NEXT_PRIVATE_UPLOAD_REGION
+        scope: RUN_TIME
+        value: nyc3
+      - key: NEXT_PRIVATE_UPLOAD_ENDPOINT
+        scope: RUN_TIME
+        value: https://nyc3.digitaloceanspaces.com
+      - key: NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID
+        scope: RUN_TIME
+        type: SECRET
+        value: DO801RMACGKKNJPUBFQ9
+      - key: NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: utW5mjDr65mJptk1uaxh924ob28jhFok8Yooi+INj6U
+      - key: NEXT_PRIVATE_UPLOAD_DISTRIBUTION_HOST
+        scope: RUN_AND_BUILD_TIME
+        value: papermark-uploads.nyc3.digitaloceanspaces.com
+
+      # ── Email (Resend — set via Console later) ────────────
+      - key: RESEND_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
+      # ── Google OAuth (optional — set via Console later) ───
+      - key: GOOGLE_CLIENT_ID
+        scope: RUN_TIME
+        value: ""
+      - key: GOOGLE_CLIENT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
+      # ── Tinybird analytics (optional) ─────────────────────
+      - key: TINYBIRD_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
+      # ── Upstash QStash (optional — background jobs) ──────
+      - key: QSTASH_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: QSTASH_CURRENT_SIGNING_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: QSTASH_NEXT_SIGNING_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
+      # ── Upstash Redis (optional — rate limiting) ──────────
+      - key: UPSTASH_REDIS_REST_LOCKER_URL
+        scope: RUN_TIME
+        value: ""
+      - key: UPSTASH_REDIS_REST_LOCKER_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+
+      # ── Trigger.dev (optional — background tasks) ─────────
+      - key: TRIGGER_SECRET_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: TRIGGER_API_URL
+        scope: RUN_TIME
+        value: https://api.trigger.dev
+
+      # ── Passkeys / Hanko (optional) ───────────────────────
+      - key: HANKO_API_KEY
+        scope: RUN_TIME
+        type: SECRET
+        value: ""
+      - key: NEXT_PUBLIC_HANKO_TENANT_ID
+        scope: RUN_AND_BUILD_TIME
+        value: ""
+
+      # ── Webhooks (optional) ───────────────────────────────
+      - key: NEXT_PUBLIC_WEBHOOK_BASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ""
+      - key: NEXT_PUBLIC_WEBHOOK_BASE_HOST
+        scope: RUN_AND_BUILD_TIME
+        value: ""
+
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    github:
+      repo: danknasty/papermark
+      branch: main
+    dockerfile_path: Dockerfile.migrate
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_count: 1
+    envs:
+      - key: POSTGRES_PRISMA_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: POSTGRES_PRISMA_URL_NON_POOLING
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+databases:
+  - name: db
+    engine: PG
+    production: false
+
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+
+ingress:
+  rules:
+    - match:
+        path:
+          prefix: /
+      component:
+        name: web

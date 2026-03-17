@@ -1,0 +1,119 @@
+spec:
+  name: papermark
+  region: nyc
+
+  services:
+    - name: web
+      git:
+        repo_clone_url: https://github.com/YOUR_GITHUB_USERNAME/papermark.git
+        branch: main
+      dockerfile_path: Dockerfile
+      http_port: 3000
+      instance_size_slug: apps-d-1vcpu-2gb
+      instance_count: 1
+      health_check:
+        http_path: /
+        initial_delay_seconds: 30
+      envs:
+        - key: NEXTAUTH_SECRET
+          scope: RUN_TIME
+          type: SECRET
+          value: CHANGE_ME
+        - key: NEXTAUTH_URL
+          scope: RUN_AND_BUILD_TIME
+          value: ${web.PUBLIC_URL}
+        - key: NEXT_PUBLIC_BASE_URL
+          scope: RUN_AND_BUILD_TIME
+          value: ${web.PUBLIC_URL}
+        - key: NEXT_PUBLIC_MARKETING_URL
+          scope: RUN_AND_BUILD_TIME
+          value: ${web.PUBLIC_URL}
+        - key: NEXT_PUBLIC_APP_BASE_HOST
+          scope: RUN_AND_BUILD_TIME
+          value: ""
+        - key: POSTGRES_PRISMA_URL
+          scope: RUN_AND_BUILD_TIME
+          value: ${db.DATABASE_URL}
+        - key: POSTGRES_PRISMA_URL_NON_POOLING
+          scope: RUN_AND_BUILD_TIME
+          value: ${db.DATABASE_URL}
+        - key: NEXT_PRIVATE_DOCUMENT_PASSWORD_KEY
+          scope: RUN_TIME
+          type: SECRET
+          value: CHANGE_ME
+        - key: NEXT_PRIVATE_VERIFICATION_SECRET
+          scope: RUN_TIME
+          type: SECRET
+          value: CHANGE_ME
+        - key: NEXT_PUBLIC_UPLOAD_TRANSPORT
+          scope: RUN_AND_BUILD_TIME
+          value: s3
+        - key: NEXT_PRIVATE_UPLOAD_BUCKET
+          scope: RUN_TIME
+          value: ""
+        - key: NEXT_PRIVATE_UPLOAD_REGION
+          scope: RUN_TIME
+          value: nyc3
+        - key: NEXT_PRIVATE_UPLOAD_ENDPOINT
+          scope: RUN_TIME
+          value: https://nyc3.digitaloceanspaces.com
+        - key: NEXT_PRIVATE_UPLOAD_ACCESS_KEY_ID
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: NEXT_PRIVATE_UPLOAD_SECRET_ACCESS_KEY
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: NEXT_PRIVATE_UPLOAD_DISTRIBUTION_HOST
+          scope: RUN_AND_BUILD_TIME
+          value: ""
+        - key: RESEND_API_KEY
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: TINYBIRD_TOKEN
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+        - key: GOOGLE_CLIENT_ID
+          scope: RUN_TIME
+          value: ""
+        - key: GOOGLE_CLIENT_SECRET
+          scope: RUN_TIME
+          type: SECRET
+          value: ""
+
+  jobs:
+    - name: migrate
+      kind: PRE_DEPLOY
+      git:
+        repo_clone_url: https://github.com/YOUR_GITHUB_USERNAME/papermark.git
+        branch: main
+      dockerfile_path: Dockerfile.migrate
+      instance_size_slug: apps-s-1vcpu-0.5gb
+      instance_count: 1
+      envs:
+        - key: POSTGRES_PRISMA_URL
+          scope: RUN_TIME
+          value: ${db.DATABASE_URL}
+        - key: POSTGRES_PRISMA_URL_NON_POOLING
+          scope: RUN_TIME
+          value: ${db.DATABASE_URL}
+
+  databases:
+    - name: db
+      engine: PG
+      production: false
+
+  alerts:
+    - rule: DEPLOYMENT_FAILED
+    - rule: DOMAIN_FAILED
+
+  ingress:
+    rules:
+      - match:
+          path:
+            prefix: /
+        component:
+          name: web
