@@ -10,6 +10,12 @@ RUN npm install --legacy-peer-deps --ignore-scripts
 RUN npx prisma generate
 
 # DO App Platform dev databases (PG 16) restrict CREATE on public schema.
-# Grant it before running migrations. The $POSTGRES_PRISMA_URL env var
-# is injected at runtime by the platform.
-CMD sh -c 'psql "$POSTGRES_PRISMA_URL" -c "GRANT CREATE ON SCHEMA public TO CURRENT_USER;" 2>/dev/null; npx prisma migrate deploy'
+# Take ownership of the schema before running migrations.
+CMD sh -c '\
+  echo "=== Pre-migration: fixing schema permissions ===" && \
+  psql "$POSTGRES_PRISMA_URL" -c "SELECT current_user, current_database();" && \
+  psql "$POSTGRES_PRISMA_URL" -c "ALTER SCHEMA public OWNER TO CURRENT_USER;" 2>&1 || \
+  psql "$POSTGRES_PRISMA_URL" -c "GRANT ALL ON SCHEMA public TO CURRENT_USER;" 2>&1 || \
+  echo "Warning: could not fix schema permissions" && \
+  echo "=== Running Prisma migrations ===" && \
+  npx prisma migrate deploy'
