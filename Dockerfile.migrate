@@ -1,6 +1,6 @@
 # Lightweight image for running Prisma migrations only
 FROM node:22-alpine
-RUN apk add --no-cache libc6-compat postgresql-client
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -9,13 +9,4 @@ COPY prisma ./prisma/
 RUN npm install --legacy-peer-deps --ignore-scripts
 RUN npx prisma generate
 
-# DO App Platform dev databases (PG 16) restrict CREATE on public schema.
-# Take ownership of the schema before running migrations.
-CMD sh -c '\
-  echo "=== Pre-migration: fixing schema permissions ===" && \
-  psql "$POSTGRES_PRISMA_URL" -c "SELECT current_user, current_database();" && \
-  psql "$POSTGRES_PRISMA_URL" -c "ALTER SCHEMA public OWNER TO CURRENT_USER;" 2>&1 || \
-  psql "$POSTGRES_PRISMA_URL" -c "GRANT ALL ON SCHEMA public TO CURRENT_USER;" 2>&1 || \
-  echo "Warning: could not fix schema permissions" && \
-  echo "=== Running Prisma migrations ===" && \
-  npx prisma migrate deploy'
+CMD ["npx", "prisma", "migrate", "deploy"]
