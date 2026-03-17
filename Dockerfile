@@ -5,7 +5,7 @@ WORKDIR /app
 
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
 # ── Stage 2: Build the application ───────────────────────────
 FROM node:22-alpine AS builder
