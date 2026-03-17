@@ -136,12 +136,12 @@ services:
 
       # ── Passkeys / Hanko (optional) ───────────────────────
       - key: HANKO_API_KEY
-        scope: RUN_TIME
+        scope: RUN_AND_BUILD_TIME
         type: SECRET
-        value: ""
+        value: "placeholder-for-build"
       - key: NEXT_PUBLIC_HANKO_TENANT_ID
         scope: RUN_AND_BUILD_TIME
-        value: ""
+        value: "placeholder"
 
       # ── Webhooks (optional) ───────────────────────────────
       - key: NEXT_PUBLIC_WEBHOOK_BASE_URL
