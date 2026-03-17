@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-RUN npm install --legacy-peer-deps --omit=dev
+RUN npm install --legacy-peer-deps --ignore-scripts
 RUN npx prisma generate
 
 CMD ["npx", "prisma", "migrate", "deploy"]
