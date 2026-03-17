@@ -12,11 +12,11 @@ services:
     instance_size_slug: apps-d-1vcpu-2gb
     instance_count: 1
     health_check:
-      http_path: /
-      initial_delay_seconds: 30
+      http_path: /api/health
+      initial_delay_seconds: 60
       period_seconds: 15
-      timeout_seconds: 5
-      failure_threshold: 5
+      timeout_seconds: 10
+      failure_threshold: 8
     envs:
       # ── Auth ──────────────────────────────────────────────
       - key: NEXTAUTH_SECRET
