@@ -1,6 +1,6 @@
 # Lightweight image for running Prisma migrations only
 FROM node:22-alpine
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat postgresql-client
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -9,4 +9,7 @@ COPY prisma ./prisma/
 RUN npm install --legacy-peer-deps --ignore-scripts
 RUN npx prisma generate
 
-CMD ["npx", "prisma", "migrate", "deploy"]
+# DO App Platform dev databases (PG 16) restrict CREATE on public schema.
+# Grant it before running migrations. The $POSTGRES_PRISMA_URL env var
+# is injected at runtime by the platform.
+CMD sh -c 'psql "$POSTGRES_PRISMA_URL" -c "GRANT CREATE ON SCHEMA public TO CURRENT_USER;" 2>/dev/null; npx prisma migrate deploy'
